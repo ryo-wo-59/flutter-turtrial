@@ -1,81 +1,55 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MaterialApp(
-    home: FirstScreen(),
+  runApp(MaterialApp(
+    initialRoute: '/second/third',
+    routes: {
+      '/': (context) => const FirstScreen(),
+      '/second': (context) => const SecondScreen(),
+      '/second/third': (context) => const ThirdScreen(),
+    }
   ));
 }
 
-class FirstScreen extends StatefulWidget {
+class FirstScreen extends StatelessWidget {
   const FirstScreen({super.key});
-
-  @override
-  State<StatefulWidget> createState() => _FirstScreenState();
-}
-
-class _FirstScreenState extends State<FirstScreen> {
-  int _number = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FirstScreen'),
+        title: const Text('First Screen'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('number = $_number'),
-            ElevatedButton(
-              child: const Text('次へ'),
-              onPressed: () async {
-                final newNumber = await Navigator.of(context).push<int>(
-                  MaterialPageRoute(
-                    builder: (_) => SecondScreen(number: _number)
-                  ),
-                );
-                setState(() {
-                  if (newNumber != null) {
-                    _number = newNumber;
-                  }
-                });
-              },
-            )
+            ElevatedButton(onPressed: (){ Navigator.of(context).pushNamed('/second'); }, child: const Text("FirstからSecondへ")),
+            ElevatedButton(onPressed: (){ Navigator.of(context).pushNamed('/second/third'); }, child: const Text("FirstからThirdへ"))
           ],
-        ) 
-      )
+        ),
+      ),
     );
   }
 }
 
 class SecondScreen extends StatelessWidget {
-  const SecondScreen({super.key, required this.number});
-
-  final int number;
+  const SecondScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IncrementScreen'),
+        title: const Text("Second Screen"),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(number + 1);
-              }, 
-              child: const Text('Increment')
-            ),
-            ElevatedButton(
-              child: const Text('Dcrement'),
-              onPressed: () {
-                Navigator.of(context).pop(number - 1);
-              },
-            )
+            ElevatedButton(onPressed: (){ Navigator.of(context).pushNamed('/second/third'); }, child: const Text("SecondからThirdへ")),
+            ElevatedButton(onPressed: (){
+              Navigator.of(context).pop();
+            }, child: const Text("戻る"))
           ],
         )
       )
@@ -83,3 +57,28 @@ class SecondScreen extends StatelessWidget {
   }
 }
 
+class ThirdScreen extends StatelessWidget {
+  const ThirdScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+  
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Third Screen'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text("戻る")
+            ),
+          ],
+        )
+      )
+    );
+  }
+}
