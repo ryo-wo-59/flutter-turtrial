@@ -22,9 +22,11 @@ class MyApp extends StatelessWidget {
 class ListPage extends StatelessWidget {
   const ListPage({super.key});
 
-  static const List<String> entries = <String>['A', 'B', 'C'];
-  static const List<int> colorCodes = <int>[600, 500, 100];
-
+  static const List<Object> todos = <Object>[
+    {'title': 'Todo 1', 'description': 'Description 1', 'colorCode': 100},
+    {'title': 'Todo 2', 'description': 'Description 2', 'colorCode': 200},
+    {'title': 'Todo 3', 'description': 'Description 3', 'colorCode': 300},
+  ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,22 +35,25 @@ class ListPage extends StatelessWidget {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(8),
-        itemCount: entries.length,
+        itemCount: todos.length,
         itemBuilder: (BuildContext context, int index) {
+          final todo = todos[index] as Map<String, Object>;
           return Column(
             children: [
               GestureDetector(
                 onTap: () {
-                  // タップ時の処理をここに書く
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Tapped on ${entries[index]}')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TodoDetailPage(todo: todo["description"] as String)
+                    )
                   );
                 },
                 child: Container(
                   height: 50,
-                  color: Colors.amber[colorCodes[index]],
+                  color: Colors.amber[todo["colorCode"] as int],
                   child: Center(
-                    child: Text('Entry ${entries[index]}'),
+                    child: Text('Entry ${todo["title"] as String}'),
                   ),
                 ),
               ),
@@ -61,48 +66,31 @@ class ListPage extends StatelessWidget {
   }
 }
 
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({super.key, required this.title});
+class TodoDetailPage extends StatelessWidget {
+  final String todo;
+  const TodoDetailPage({super.key, required this.todo});
 
-//   final String title;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Todo Detail'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Detail of $todo'),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('戻る'),
+            ),
+          ],
+        )
+      ),
+    );
+  }
+}
 
-//   @override
-//   State<MyHomePage> createState() => _MyHomePageState();
-// }
-
-// class _MyHomePageState extends State<MyHomePage> {
-//   int _counter = 0;
-
-//   void _incrementCounter() {
-//     setState(() {
-//       _counter++;
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-//         title: Text(widget.title),
-//       ),
-//       body: Center(
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: <Widget>[
-//             const Text('You have pushed the button this many times:'),
-//             Text(
-//               '$_counter',
-//               style: Theme.of(context).textTheme.headlineMedium,
-//             ),
-//           ],
-//         ),
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         onPressed: _incrementCounter,
-//         tooltip: 'Increment',
-//         child: const Icon(Icons.add),
-//       ), // This trailing comma makes auto-formatting nicer for build methods.
-//     );
-//   }
-// }
