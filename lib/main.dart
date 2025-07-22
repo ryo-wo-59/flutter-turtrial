@@ -47,13 +47,22 @@ class _ListPageState extends State<ListPage> {
           return Column(
             children: [
               GestureDetector(
-                onTap: () async{
-                  Navigator.push(
+                onTap: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => TodoDetailPage(todo: todo['description'] as String)
+                      builder: (context) => TodoDetailPage(title: todo['title'] as String, todo: todo['description'] as String)
                     )
                   );
+                  if (result == 'delete') {
+                    setState(() {
+                      todos.removeAt(index);
+                    });
+                  } else if (result != null) {
+                    setState(() {
+                      todos[index] = result as Map<String, Object>;
+                    });
+                  }
                 },
                 child: Container(
                   height: 50,
@@ -87,14 +96,56 @@ class _ListPageState extends State<ListPage> {
 }
 
 class TodoDetailPage extends StatelessWidget {
+  final String title;
   final String todo;
-  const TodoDetailPage({super.key, required this.todo});
+  const TodoDetailPage({super.key, required this.todo, required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Todo Detail'),
+        title: Text(title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () async {
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('削除確認'),
+                  content: const Text('このTodoを削除しますか？'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('キャンセル')
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('削除')
+                    )
+                  ]
+                )
+              );
+              if (result == true) {
+                Navigator.pop(context, 'delete');
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              final updatedTodo = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditTodoPage(todo: {'title': title, 'description': todo, 'colorCode': 100})
+                )
+              );
+              if (updatedTodo != null) {
+                Navigator.pop(context, updatedTodo);
+              }
+            },
+          )
+        ]
       ),
       body: Center(
         child: Column(
@@ -187,4 +238,89 @@ class _AddTodoPageState extends State<AddTodoPage> {
       ),
     );
   }
+}
+
+class EditTodoPage extends StatefulWidget {
+  final Map<String, Object> todo;
+  const EditTodoPage({super.key, required this.todo});
+
+  @override
+  State<EditTodoPage> createState() => _EditTodoPageState();
+}
+
+class _EditTodoPageState extends State<EditTodoPage> {
+  final _formKey = GlobalKey<FormState>();
+  late String _title;
+  late String _description;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = widget.todo['title'] as String;
+    _description = widget.todo['description'] as String;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Todoを編集')),
+      body: Form(
+        key: _formKey,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextFormField(
+                  initialValue: _title,
+                  decoration: const InputDecoration(
+                    labelText: 'タイトル',
+                  ),
+                  onSaved: (String? value) {
+                    _title = value ?? '';
+                  },
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'タイトルを入力してください';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  initialValue: _description,
+                  decoration: const InputDecoration(
+                    labelText: '詳細',
+                  ),
+                  onSaved: (String? value) {
+                    _description = value ?? '';
+                  },
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return '詳細を入力してください';
+                    }
+                    return null;
+                  },
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      _formKey.currentState!.save();
+                      Navigator.pop(context, {
+                        'title': _title,
+                        'description': _description,
+                        'colorCode': 100, // 必要に応じて
+                      });
+                    }
+                  },
+                  child: const Text('保存'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 }
