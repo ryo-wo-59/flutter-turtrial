@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_turtrial/todo_provider.dart';
+import 'package:flutter_turtrial/model/todo.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ProviderScope(
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -19,31 +26,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class ListPage extends StatefulWidget {
+class ListPage extends ConsumerWidget {
   const ListPage({super.key});
 
   @override
-  State<ListPage> createState() => _ListPageState();
-}
-
-class _ListPageState extends State<ListPage> {
-  final List<Map<String, Object>> todos = [
-    {'title': 'Todo 1', 'description': 'Description 1', 'colorCode': 100},
-    {'title': 'Todo 2', 'description': 'Description 2', 'colorCode': 200},
-    {'title': 'Todo 3', 'description': 'Description 3', 'colorCode': 300},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todoList = ref.watch(todoListNotifierProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('リストページ'),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(8),
-        itemCount: todos.length,
+        itemCount: todoList.length,
         itemBuilder: (BuildContext context, int index) {
-          final todo = todos[index];
+          final todo = todoList[index];
           return Column(
             children: [
               GestureDetector(
@@ -51,24 +48,18 @@ class _ListPageState extends State<ListPage> {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => TodoDetailPage(title: todo['title'] as String, todo: todo['description'] as String)
+                      builder: (context) => TodoDetailPage(index: index)
                     )
                   );
                   if (result == 'delete') {
-                    setState(() {
-                      todos.removeAt(index);
-                    });
-                  } else if (result != null) {
-                    setState(() {
-                      todos[index] = result as Map<String, Object>;
-                    });
+                    ref.read(todoListNotifierProvider.notifier).remove(index);
                   }
                 },
                 child: Container(
                   height: 50,
-                  color: Colors.amber[todo['colorCode'] as int],
+                  color: Colors.amber[todo.colorCode],
                   child: Center(
-                    child: Text('Entry ${todo['title']}'),
+                    child: Text('Entry ${todo.title}'),
                   ),
                 ),
               ),
@@ -84,27 +75,28 @@ class _ListPageState extends State<ListPage> {
             MaterialPageRoute(builder: (context) => const AddTodoPage())
           );
           if (newTodo != null) {
-            setState(() {
-              todos.add(newTodo);
-            });
+            ref.read(todoListNotifierProvider.notifier).add(newTodo);
           }
         },
         child: const Icon(Icons.add),
       )
     );
+    
   }
 }
 
-class TodoDetailPage extends StatelessWidget {
-  final String title;
-  final String todo;
-  const TodoDetailPage({super.key, required this.todo, required this.title});
+
+class TodoDetailPage extends ConsumerWidget {
+  final int index;
+  const TodoDetailPage({super.key, required this.index});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final todoList = ref.watch(todoListNotifierProvider);
+    final todo = todoList[index];
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text(todo.title),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
@@ -137,11 +129,11 @@ class TodoDetailPage extends StatelessWidget {
               final updatedTodo = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditTodoPage(todo: {'title': title, 'description': todo, 'colorCode': 100})
+                  builder: (context) => EditTodoPage(todo: todo)
                 )
               );
               if (updatedTodo != null) {
-                Navigator.pop(context, updatedTodo);
+                ref.read(todoListNotifierProvider.notifier).update(index, updatedTodo);
               }
             },
           )
@@ -151,7 +143,7 @@ class TodoDetailPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Detail of $todo'),
+            Text('Detail of ${todo.description}'),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -221,12 +213,13 @@ class _AddTodoPageState extends State<AddTodoPage> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       _formKey.currentState!.save(); 
+                      Todo newTodo = Todo(
+                        title: _title,
+                        description: _description,
+                        colorCode: 100 // 必要に応じて
+                      );
                       // フォームが有効な場合の処理
-                      Navigator.pop(context, {
-                        'title': _title,
-                        'description': _description,
-                        'colorCode': 100, // 必要に応じて
-                      });
+                      Navigator.pop(context, newTodo);
                     }
                   },
                   child: const Text('保存'),
@@ -241,7 +234,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
 }
 
 class EditTodoPage extends StatefulWidget {
-  final Map<String, Object> todo;
+  final Todo todo;
   const EditTodoPage({super.key, required this.todo});
 
   @override
@@ -256,8 +249,8 @@ class _EditTodoPageState extends State<EditTodoPage> {
   @override
   void initState() {
     super.initState();
-    _title = widget.todo['title'] as String;
-    _description = widget.todo['description'] as String;
+    _title = widget.todo.title;
+    _description = widget.todo.description;
   }
 
   @override
@@ -306,11 +299,12 @@ class _EditTodoPageState extends State<EditTodoPage> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       _formKey.currentState!.save();
-                      Navigator.pop(context, {
-                        'title': _title,
-                        'description': _description,
-                        'colorCode': 100, // 必要に応じて
-                      });
+                      final updatedTodo = Todo(
+                        title: _title,
+                        description: _description,
+                        colorCode: 100 // 必要に応じて
+                      );
+                      Navigator.pop(context, updatedTodo);
                     }
                   },
                   child: const Text('保存'),
