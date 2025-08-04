@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_turtrial/post_list_provider.dart';
 import 'package:flutter_turtrial/todo_provider.dart';
 import 'package:flutter_turtrial/model/todo.dart';
 
@@ -31,43 +32,48 @@ class ListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final todoList = ref.watch(todoListNotifierProvider);
+    // final todoList = ref.watch(todoListNotifierProvider);
+    final postListAsync = ref.watch(postListProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('リストページ'),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(8),
-        itemCount: todoList.length,
-        itemBuilder: (BuildContext context, int index) {
-          final todo = todoList[index];
-          return Column(
-            children: [
-              GestureDetector(
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TodoDetailPage(index: index)
-                    )
-                  );
-                  if (result == 'delete') {
-                    ref.read(todoListNotifierProvider.notifier).remove(index);
-                  }
-                },
-                child: Container(
-                  height: 50,
-                  color: Colors.amber[todo.colorCode],
-                  child: Center(
-                    child: Text('Entry ${todo.title}'),
+      body: postListAsync.when(
+        data: (postList) => ListView.builder(
+          padding: const EdgeInsets.all(8),
+          itemCount: postList.length,
+          itemBuilder: (BuildContext context, int index) {
+            final todo = postList[index];
+            return Column(
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TodoDetailPage(index: index)
+                      )
+                    );
+                    if (result == 'delete') {
+                      ref.read(todoListNotifierProvider.notifier).remove(index);
+                    }
+                  },
+                  child: Container(
+                    height: 50,
+                    color: Colors.amber,
+                    child: Center(
+                      child: Text('Entry ${todo.title}'),
+                    ),
                   ),
                 ),
-              ),
-              const Divider(),
-            ]
-          );
-        }
-      ),
+                const Divider(),
+              ]
+            );
+          }
+        ),
+        error: (error, stack) => Center(child: Text('Error: $error')),
+        loading: () => const Center(child: CircularProgressIndicator()),
+      ), 
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final newTodo = await Navigator.push(
